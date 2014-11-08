@@ -22,7 +22,6 @@ void Rend::start(){
 	SDL_RenderGetViewport(r, &re);
 	size.x=re.w;
 	size.y=re.h;
-	std::cout<<size.x<<' '<<size.y<<std::endl;
 	return;
 }
 void Rend::finish(){

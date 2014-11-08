@@ -30,7 +30,7 @@ void Ctx::state(State *s){
 void Ctx::handle(SDL_Event ev){
 	switch(ev.type){
 		case SDL_USEREVENT:
-			if(ev.user.code==0){
+			if(ev.user.code==12355){
 				if(cur) cur->tick();
 			}
 			break;
@@ -60,8 +60,9 @@ static Uint32 doTimerTick(Uint32 delay, void *arg){
 	Ctx *c=static_cast<Ctx*>(arg);
 	SDL_Event event;
 	event.type=SDL_USEREVENT;
-	event.user.code=0;
+	event.user.code=12355;
 	event.user.data1=c;
+	SDL_PushEvent(&event);
 	return delay;
 }
 void Ctx::_tRemove(){

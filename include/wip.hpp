@@ -13,6 +13,7 @@ enum class KEType{
 using TS=Uint32;
 struct State;
 using Vec2=Vec2t<double>;
+using Mat2=Mat2t<double>;
 using Rect=Rectt<double>;
 using Vec2i=Vec2t<int>;
 using Recti=Rectt<int>;
