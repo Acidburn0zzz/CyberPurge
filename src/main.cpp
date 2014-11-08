@@ -12,7 +12,7 @@ int main(){
 	SDL_Init(SDL_INIT_TIMER|SDL_INIT_AUDIO|SDL_INIT_VIDEO|SDL_INIT_EVENTS);
 	IMG_Init(IMG_INIT_PNG);
 	SDL_Window *w=SDL_CreateWindow("WIP", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1600, 800, SDL_WINDOW_MAXIMIZED|SDL_WINDOW_RESIZABLE);
-	SDL_TimerID rendTimer=SDL_AddTimer(16, &tickRender, reinterpret_cast<void*>(SDL_GetWindowID(w)));
+	SDL_TimerID rendTimer=SDL_AddTimer(20, &tickRender, reinterpret_cast<void*>(SDL_GetWindowID(w)));
 	Ctx *c=new Ctx(w);
 	Rend r=Rend(w);
 	c->state(new GInit);

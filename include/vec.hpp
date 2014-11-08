@@ -79,6 +79,13 @@ template<class T>
 T cross(Vec2t<T> a, Vec2t<T> b){
 	return a.x*b.y-a.y*b.x;
 }
+template<class T>
+Vec2t<T> dc(Vec2t<T> a, Vec2t<T> b){
+	return Vec2t<T>{
+		dot(a,b),
+		cross(a,b)
+	};
+}
 
 #define WIP__OPERATOR_DEF(oper, as, call) \
 	namespace wip_operator{namespace{ \
@@ -96,10 +103,12 @@ T cross(Vec2t<T> a, Vec2t<T> b){
 	}
 #define WIP__OPERATOR(oper, as) as wip_operator::tag_##oper() as
 
-WIP__OPERATOR_DEF(dot, *, dot)
-WIP__OPERATOR_DEF(cross, *, cross)
+WIP__OPERATOR_DEF(dot, *, ::dot)
+WIP__OPERATOR_DEF(cross, *, ::cross)
+WIP__OPERATOR_DEF(dc, *, ::dc)
 #define _dot_ WIP__OPERATOR(dot, *)
 #define _cross_ WIP__OPERATOR(cross, *)
+#define _dc_ WIP__OPERATOR(dc, *)
 
 
 template<class T>

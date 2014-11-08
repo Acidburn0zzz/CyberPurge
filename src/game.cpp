@@ -1,5 +1,28 @@
 #include <game.hpp>
+#include <algorithm>
 
+static Vec2 reflect(Vec2 a, Vec2 b){
+	Vec2 dc=a _dc_ b;
+	dc/=dc.len();
+	Vec2 dc1={dc.x,-dc.y};
+	Vec2 dc2={dc.y, dc.x};
+	double al=a.len();
+	a=Vec2{
+		a _dot_ dc1,
+		a _dot_ dc2
+	};
+	a/=a.len();
+	a*=al;
+	return a;
+}
+static bool close(ORect &a, ORect &b){
+	double dist=(a.pos-b.pos).len();
+	return dist<(a.size.len()+b.size.len())/2;
+}
+static bool close(ORect &a, OBall &b){
+	double dist=(a.pos-b.pos).len();
+	return dist<(a.size.len()+b.r)/2;
+}
 Game::~Game(){
 	return;
 }
@@ -7,7 +30,7 @@ Game::Game(std::istream &fin){
 	std::size_t r, c;
 	fin>>r>>c;
 	grid=Array2d<Cell>(r, c);
-	for(std::size_t i=0;i<r;i++){
+	for(std::size_t i=r;i--;){
 		for(std::size_t j=0;j<c;j++){
 			char c;
 			fin>>c;
@@ -16,43 +39,79 @@ Game::Game(std::istream &fin){
 	}
 	fin>>bgsize.x>>bgsize.y;
 
-	plr.pos=Vec2{1.375,2};
+	plr.pos=Vec2{5,5};
 	plr.vel=Vec2{0.1,0};
+	plr.tex="ass/player-0.png";
 	plr.mass=60;
 	plr.drag=0.5;
-	plr.size=Vec2{0.75,2};
-	plr.gndAcc=10;
-	plr.airAcc=7;
-	plr.jump=6;
+	plr.size=Vec2{9.24/4,12.03/4};
+	plr.gndAcc=40;
+	plr.airAcc=30;
+	plr.jump=15;
+
+	plr.maxhp=100;
+	plr.hp=100;
 
 	ball.pos=Vec2{-100,-100};
 	ball.vel=Vec2{0,0};
-	ball.r=1;
+	ball.tex="ass/ball.png";
 	ball.mass=1;
-	ball.r=1;
+	ball.r=0.4;
 	ball.drag=1;
+	ball.damage=0.1;
+	ball.acc=1.3;
+	ball.initvel=Vec2{0,0};
 	ticklen=0.01;
 
-	drAir=1;
-	gravity=Vec2{0,-9.81};
+	Enemy e;
+	e.maxhp=30;
+	e.hp=e.maxhp;
+	e.mass=1;
+	e.drag=2;
+	e.pos=Vec2{10,10};
+	e.size=Vec2{991,779}/200;
+	e.vel=Vec2{0,0};
+	e.tex="ass/enemy-1-0.png";
+	e.damage=20;
+	e.acc=5;
+	enemies.push_back(e);
+
+	//gravity=Vec2{0,-4};
+	gravity=Vec2{0,-55};
+	baseKB=10.0;
 
 	cellinfo['#']=CellInfo{
 		1,1,1,1,
-		10,30,true,
+		10,60,true,
+		1,
 		"ass/cell/wall.png"
+	};
+	cellinfo['J']=CellInfo{
+		1,1,1,1,
+		10,60,true,
+		2,
+		"ass/cell/jumpwall.png"
+	};
+	cellinfo['j']=CellInfo{
+		1,0,0,0,
+		10,60,true,
+		2,
+		"ass/cell/jump.png"
 	};
 	cellinfo['.']=CellInfo{
 		0,0,0,0,
-		0,0,false,
+		1,1,false,
+		1,
 		"ass/cell/air.png"
 	};
 	return;
 }
-void Game::tBase(Object &o, double drag){
-	o.vel+=gravity*ticklen;
+void Game::tBase(Object &o, double drag, double gc){
+	o.vel+=gravity*ticklen*gc;
 	o.pos+=o.vel*ticklen;
+	drag=drag*std::sqrt(o.vel.x*o.vel.x/o.vel.len2());
 	double dragc=(1.0-o.vel.len2()*o.drag*drag/o.mass*ticklen);
-	if(dragc<=0) dragc=0.01;
+	if(dragc<=0.01) dragc=0.01;
 	o.vel*=dragc;
 	return;
 }
@@ -65,10 +124,15 @@ void Game::tGround(ORect &o, bool dir){
 	double y=o.pos.y;
 	if(dir==0) y-=o.size.y/2;
 	else y+=o.size.y/2;
-	double minx=o.pos.x-o.size.x/2+0.1;
+	double minx=o.pos.x-o.size.x/2+0.2;
 	double maxx=o.pos.x+o.size.x/2;
-	int maxxi=maxx+0.9;
+	int maxxi=maxx+0.8;
 	int yi=y;
+	if(dir==0){
+		if(y-yi<0.3) return;
+	}else{
+		if(y-yi>0.7) return;
+	}
 	for(int i=minx;i<maxxi;i++){
 		CellInfo &c=cellinfo[grid[yi][i]];
 		if(dir==0?c.solidU:c.solidD){
@@ -90,10 +154,15 @@ void Game::tWall(ORect &o, bool dir){
 	double x=o.pos.x;
 	if(dir==0) x+=o.size.x/2;
 	else x-=o.size.x/2;
-	double miny=o.pos.y-o.size.y/2+0.1;
+	double miny=o.pos.y-o.size.y/2+0.2;
 	double maxy=o.pos.y+o.size.y/2;
-	int maxyi=maxy+0.9;
+	int maxyi=maxy+0.8;
 	int xi=x;
+	if(dir==0){
+		if(x-xi>0.7) return;
+	}else{
+		if(x-xi<0.3) return;
+	}
 	for(int i=miny;i<maxyi;i++){
 		CellInfo &c=cellinfo[grid[i][xi]];
 		if(dir==0?c.solidL:c.solidR){
@@ -105,16 +174,99 @@ void Game::tWall(ORect &o, bool dir){
 	}
 	return;
 }
-void Game::tReflect(OBall &o){
-	return;
+bool Game::tReflect(OBall &o){
+	if(o.vel.y<0){
+		int x=o.pos.x;
+		int y=o.pos.y-o.r;
+		CellInfo &cell=cellinfo[grid[y][x]];
+		if(cell.solidU){
+			o.vel.y=-o.vel.y*std::sqrt(cell.jump);
+			o.pos.y=y+1+o.r;
+			return true;
+		}
+	}
+	if(o.vel.y>0){
+		int x=o.pos.x;
+		int y=o.pos.y+o.r;
+		CellInfo &cell=cellinfo[grid[y][x]];
+		if(cell.solidD){
+			o.vel.y=-o.vel.y;
+			o.pos.y=y-o.r;
+			return true;
+		}
+	}
+	if(o.vel.x<0){
+		int x=o.pos.x-o.r;
+		int y=o.pos.y;
+		CellInfo &cell=cellinfo[grid[y][x]];
+		if(cell.solidR){
+			o.vel.x=-o.vel.x;
+			o.pos.x=x+1+o.r;
+			return true;
+		}
+	}
+	if(o.vel.x>0){
+		int x=o.pos.x+o.r;
+		int y=o.pos.y;
+		CellInfo &cell=cellinfo[grid[y][x]];
+		if(cell.solidR){
+			o.vel.x=-o.vel.x;
+			o.pos.x=x-o.r;
+			return true;
+		}
+	}
+	return false;
 }
 void Game::tick(Boulder &o){
-	tBase(o, 0);
-	tReflect(o);
+	if(o.pos.x<1 || o.pos.y<1 || o.pos.x>=grid.c || o.pos.y>=grid.r){
+		hasBall=false;
+		return;
+	}
+	tBase(o, 0, 0);
+	if(tReflect(o)){
+		if(o.hits==0){
+			hasBall=false;
+			return;
+		}
+		o.hits--;
+	}
+	for(auto &i:enemies){
+		if(close(i, o)){
+			double dmg=o.vel.len()*o.damage;
+			i.hp-=dmg;
+			if(i.hp>0){
+				o.vel*=o.acc;
+				o.vel=reflect(o.vel, o.pos-i.pos);
+				Vec2 knockback=i.pos-o.pos;
+				knockback/=knockback.len();
+				knockback*=baseKB*dmg;
+				i.vel+=knockback/i.mass;
+			}
+		}
+	}
 	return;
 }
 void Game::tick(Enemy &e){
-	tBase(e, drAir);
+	std::size_t cr=std::floor(e.pos.y-e.size.y/2-0.01), cc=std::floor(e.pos.x);
+	CellInfo *info=&cellinfo[grid[cr][cc]];
+
+	double acc=e.acc;
+	double dr;
+	if(e.pos.x<plr.pos.x){
+		e.vel+=Vec2{acc*ticklen,0};
+		dr=info->dragWalk;
+	}else if(e.pos.x>plr.pos.x){
+		e.vel+=Vec2{-acc*ticklen,0};
+		dr=info->dragWalk;
+	}else{
+		dr=info->dragStop;
+	}
+
+	if((e.pos-plr.pos).len()<plr.size.len()){
+		plr.hp-=e.damage*ticklen;
+	}
+
+	tBase(e, dr, 1.0);
 	e.onGround=false;
 	tGround(e, 1);
 	tGround(e, 0);
@@ -130,38 +282,34 @@ void Game::tick(Player &p){
 	if(p.ctlL){
 		p.vel+=Vec2{-acc*ticklen,0};
 	}
-	if(p.ctlSpace){
-		if(p.onGround){
-			p.vel+=Vec2{0,p.jump};
-			p.dj=3;
-		}else if(p.dj){
-			p.vel+=Vec2{0,p.jump};
-			p.dj--;
-		}
-		p.ctlSpace=0;
-	}
 	double dr;
-	double crf=std::floor(p.pos.y-p.size.y/2-0.01), ccf=std::floor(p.pos.x);
-	if(crf<0 || ccf<0){
-		dr=100000000;
-	}else{
-		std::size_t cr=crf, cc=ccf;
-		if(cr>=grid.r || cc>=grid.c){
-			dr=1000000000;
-		}else{
-			CellInfo &info=cellinfo[grid[cr][cc]];
-			// кофти
-			if(!p.ctlL && !p.ctlR && !p.ctlSpace){
-				dr=info.dragStop;
-				if(info.fastStop){
-					p.vel*=1.0-std::min(acc/p.vel.len(), 0.2);
-				}
-			}else{
-				dr=info.dragWalk;
+
+	std::size_t cr=std::floor(p.pos.y-p.size.y/2-0.01), cc=std::floor(p.pos.x);
+	CellInfo *info=&cellinfo[grid[cr][cc]];
+
+	if(p.ctlSpace){
+		if(!p.spacemask){
+			if(p.onGround){
+				p.vel.y+=p.jump*info->jump;
+				p.dj=1;
+			}else if(p.dj){
+				p.vel.y=p.jump*info->jump;
+				p.dj--;
 			}
+			info=&cellinfo['.'];
+			p.spacemask=true;
 		}
+	}else p.spacemask=false;
+
+	if((!p.ctlL && !p.ctlR && !p.ctlSpace) || (p.ctlL && p.vel.x>0) || (p.ctlR && p.vel.x<0)){
+		dr=info->dragStop;
+		if(info->fastStop){
+			p.vel*=1.0-std::min(acc/std::max(1.0, p.vel.len()), 0.2);
+		}
+	}else{
+		dr=info->dragWalk;
 	}
-	tBase(p, dr);
+	tBase(p, dr, 1.0);
 	p.onGround=false;
 	tGround(p, 1);
 	tGround(p, 0);
@@ -183,89 +331,43 @@ void Game::key(KEType type, TS time, SDL_Keysym k){
 	if(k.sym==SDLK_SPACE){
 		plr.ctlSpace=(type==KEType::Down);
 	}
-	return;
-}
-void Game::tick(){
-	//tick(ball);
-	tick(plr);
-	for(auto &i:enemies) tick(i);
-	return;
-}
-Rect Game::setView(Vec2i screen){
-	// (0,0) to (0,w)
-	// (c,r) to (?,0)
-	double scale=static_cast<double>(screen.y)/grid.r;
-	scale=std::floor(scale+0.5);
-	vm.mx=Vec2{1,0}*scale;
-	vm.my=-Vec2{0,1}*scale;
-	vm.a=Vec2{-plr.pos.x*scale+screen.x/2.0, static_cast<double>(screen.y)};
-	vmi=vm.invert();
-	Vec2 ll=vmi*Vec2{0,screen.y};
-	return Rect{ll, vmi*Vec2{screen.x,0}-ll};
-}
-Vec2i Game::viewport(Vec2 a){
-	Vec2 r=vm*a;
-	return Vec2i{static_cast<int>(std::floor(r.x+0.5)), static_cast<int>(std::floor(r.y+0.5))};
-}
-Recti Game::viewport(Rect a){
-	a.pos.y+=a.size.y;
-	a.size.y=-a.size.y;
-	Vec2 r=vm*a.pos;
-	Vec2 s{
-		vm.mx _dot_ a.size,
-		vm.my _dot_ a.size
-	};
-	return Recti{
-		Vec2i{std::floor(r.x),std::floor(r.y)},
-		Vec2i{std::floor(s.x)+1,std::floor(s.y)+1},
-	};
-}
-void Game::render(Rend *r){
-	Rect cells=setView(r->size);
-
-	{
-		SDL_Texture *bg=r->getTex("ass/background.png");
-		Vec2 ll=cells.pos, ur=cells.pos+cells.size;
-		Vec2 p=Vec2{bgsize.x*std::floor(ll.x/bgsize.x), 0};
-		while(p.x<ur.x){
-			Recti br=viewport(p, bgsize);
-			br.size.x++;
-			r->blit(br, bg);
-			p.x+=bgsize.x;
-		}
+	if(k.sym==SDLK_c && type==KEType::Down && !hasBall){
+		ball.vel=(1+20/std::max(1.0, plr.vel.len()))*plr.vel;
+		ball.vel+=ball.initvel;
+		ball.pos=plr.pos;
+		ball.hit=false;
+		ball.hits=4;
+		hasBall=true;
 	}
-
-	{
-		Recti celli;
-		celli.pos.x=std::floor(cells.pos.x);
-		celli.pos.y=std::floor(cells.pos.y);
-		celli.size.x=std::ceil(cells.size.x+2);
-		celli.size.y=std::ceil(cells.size.y+2);
-
-		celli.size+=celli.pos;
-		for(int i=celli.pos.y;i<celli.size.y;i++){
-			for(int j=celli.pos.x;j<celli.size.x;j++){
-				CellInfo *info;
-				if(i<0 || j<0 || i>= (int)grid.r || j>=(int)grid.c){
-					info=&cellinfo['#'];
-				}else{
-					info=&cellinfo[grid[i][j]];
-				}
-				SDL_Texture *tex=r->getTex(info->tex);
-				Rect p;
-				p.pos=Vec2{j,i};
-				p.size=Vec2{1,1};
-				r->blit(viewport(p), tex);
+	if(k.sym==SDLK_x){
+		if(hasBall && close(plr, ball)){
+			ball.vel*=ball.acc;
+			ball.vel=reflect(ball.vel, ball.pos-plr.pos);
+			ball.hits=5;
+		}
+		for(auto &i:enemies){
+			if(close(plr, i)){
+				i.hp-=1;
+				Vec2 knockback=i.pos-plr.pos;
+				knockback/=knockback.len();
+				knockback*=baseKB;
+				i.vel+=knockback/i.mass;
 			}
 		}
 	}
-
-	{
-		SDL_Texture *plrt=r->getTex("ass/player.png");
-		r->blit(viewport(Rect{plr.pos-plr.size/2, plr.size}), plrt);
+	return;
+}
+void Game::tick(){
+	if(hasBall){
+		tick(ball);
 	}
-	std::cout<<plr.pos.x<<' '<<plr.vel.y<<'\n';
-
-
+	tick(plr);
+	for(auto &i:enemies) tick(i);
+	enemies.erase(
+		std::remove_if(enemies.begin(), enemies.end(), [](const Enemy &a)->bool{
+			return a.hp<=0;
+		}),
+		enemies.end()
+	);
 	return;
 }

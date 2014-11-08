@@ -56,6 +56,7 @@ struct Array2d{
 struct Object{
 	Vec2 pos, vel;
 	double mass, drag;
+	std::string tex;
 };
 struct OBall: Object{
 	double r;
@@ -66,22 +67,29 @@ struct ORect: Object{
 };
 struct Boulder: OBall{
 	// Move along, there's nothing to see here.
+	bool hit;
+	double damage, acc;
+	std::size_t hits;
+	Vec2 initvel;
 };
-struct Player: ORect{
-	double hp;
+struct Entity: ORect{
+	double hp, maxhp;
+};
+struct Player: Entity{
 	double gndAcc, airAcc;
 	double jump;
+	bool spacemask=false;
 	unsigned dj=0;
 	bool ctlL=false, ctlR=false, ctlSpace=false;
-	TS djDeadline=0;
 };
-struct Enemy: ORect{
-	double hp;
+struct Enemy: Entity{
+	double r, acc, damage;
 };
 struct CellInfo{
 	bool solidU, solidD, solidL, solidR;
 	double dragWalk, dragStop;
 	bool fastStop;
+	double jump;
 	std::string tex;
 };
 struct Game: State{
@@ -95,16 +103,17 @@ struct Game: State{
 
 	double ticklen;
 	Vec2 gravity;
-	double drAir;
+	double baseKB;
 
 	Boulder ball;
 	Player plr;
 	std::vector<Enemy> enemies;
+	bool hasBall=false;
 
-	void tBase(Object &o, double drag);
+	void tBase(Object &o, double drag, double gc);
 	void tGround(ORect &o, bool dir);
 	void tWall(ORect &o, bool dir);
-	void tReflect(OBall &o);
+	bool tReflect(OBall &o);
 	void tick(Boulder &o);
 	void tick(Enemy &e);
 	void tick(Player &p);
@@ -120,4 +129,7 @@ struct Game: State{
 		return viewport(Rect{a,b});
 	}
 	virtual void render(Rend *r);
+	void render(Rend *r, ORect&);
+	void render(Rend *r, OBall&);
+	void render(Rend *r, Entity&);
 };
