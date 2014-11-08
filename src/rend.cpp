@@ -1,4 +1,5 @@
 #include <wip.hpp>
+#include <SDL_image.h>
 Rend::Rend(SDL_Window *w){
 	r=SDL_CreateRenderer(w, -1, 0);
 	return;
@@ -31,6 +32,7 @@ void Rend::finish(){
 void Rend::clear(Color c){
 	SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
 	SDL_RenderClear(r);
+	return;
 }
 void Rend::blit(Recti dst, SDL_Texture *img){
 	SDL_Rect rect;
@@ -39,6 +41,7 @@ void Rend::blit(Recti dst, SDL_Texture *img){
 	rect.w=dst.size.x;
 	rect.h=dst.size.y;
 	SDL_RenderCopy(r, img, nullptr, &rect);
+	return;
 }
 void Rend::fill(Recti dst, Color c){
 	SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
@@ -49,4 +52,14 @@ void Rend::fill(Recti dst, Color c){
 	rect.h=dst.size.y;
 	SDL_RenderFillRect(r, &rect);
 	return;
+}
+SDL_Texture *Rend::getTex(std::string filename){
+	SDL_Texture *&tex=texcache[filename];
+	if(!tex){
+		SDL_Surface *srf=IMG_Load(filename.c_str());
+		if(!srf) return nullptr;
+		tex=SDL_CreateTextureFromSurface(r, srf);
+		SDL_FreeSurface(srf);
+	}
+	return tex;
 }

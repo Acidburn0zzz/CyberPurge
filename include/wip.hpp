@@ -1,32 +1,29 @@
-#pragma once
+#ifndef _INCLUDED_wip_hpp
+#define _INCLUDED_wip_hpp
 #include <SDL.h>
 #include <SDL_image.h>
 #include <cstdint>
 #include <iostream>
 #include <vector>
+#include <unordered_map>
+#include <vec.hpp>
 enum class KEType{
 	Up,Down
 };
 using TS=Uint32;
 struct State;
-struct Vec2{
-	double x, y;
-};
-struct Rect{
-	Vec2 pos, size;
-};
-struct Vec2i{
-	int x, y;
-};
-struct Recti{
-	Vec2i pos, size;
-};
+using Vec2=Vec2t<double>;
+using Rect=Rectt<double>;
+using Vec2i=Vec2t<int>;
+using Recti=Rectt<int>;
 struct Color{
 	std::uint8_t r,g,b,a;
 };
 struct Rend{
 	SDL_Renderer *r;
 	Vec2i size;
+	std::unordered_map<std::string, SDL_Texture*> texcache;
+
 	Rend():r(nullptr){}
 	Rend(SDL_Window *w);
 	~Rend();
@@ -41,6 +38,7 @@ struct Rend{
 	void clear(Color c);
 	void blit(Recti dst, SDL_Texture *img);
 	void fill(Recti dst, Color c);
+	SDL_Texture *getTex(std::string filename);
 };
 struct Ctx{
 	State *cur;
@@ -67,3 +65,4 @@ struct State{
 	virtual void quit();
 	virtual ~State();
 };
+#endif
