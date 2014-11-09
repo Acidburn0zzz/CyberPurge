@@ -440,13 +440,13 @@ void Game::enabled(){
 	return;
 }
 void Game::key(KEType type, TS time, SDL_Keysym k){
-	if(k.sym==SDLK_LEFT){
+	if(k.sym==SDLK_LEFT || k.sym == SDLK_a){
 		plr.ctlL=(type==KEType::Down);
 	}
-	if(k.sym==SDLK_RIGHT){
+	if(k.sym==SDLK_RIGHT || k.sym == SDLK_d){
 		plr.ctlR=(type==KEType::Down);
 	}
-	if(k.sym==SDLK_SPACE){
+	if(k.sym==SDLK_SPACE || k.sym==SDLK_UP || k.sym==SDLK_w){
 		plr.ctlSpace=(type==KEType::Down);
 	}
 	if(k.sym==SDLK_x){
@@ -456,7 +456,7 @@ void Game::key(KEType type, TS time, SDL_Keysym k){
 		plr.ctlZ=(type==KEType::Down);
 	}
 	if(type!=KEType::Down) return;
-	if(k.sym==SDLK_DOWN){
+	if(k.sym==SDLK_DOWN || k.sym==SDLK_s){
 		CellInfo *info=gndcell(plr);
 		if(!info->solidD) plr.fallUntil=plr.pos.y-1.01;
 	}
