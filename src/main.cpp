@@ -12,7 +12,7 @@ static TS tickRender(TS d, void *arg){
 }
 int main(int argc, char **argv){
 	const char *gener=argv[1];
-	if(!gener) gener="bin/gen.release.exe";
+	if(!gener) return 1;
 	SDL_Init(SDL_INIT_TIMER|SDL_INIT_AUDIO|SDL_INIT_VIDEO|SDL_INIT_EVENTS);
 	IMG_Init(IMG_INIT_PNG);
 	Mix_Init(MIX_INIT_OGG);

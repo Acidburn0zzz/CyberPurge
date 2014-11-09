@@ -1,2 +1,2 @@
 #!/bin/bash
-./bin/wip.release ./bin/gen.release
+./bin/linux_x86_64/wip ./bin/linux_x86_64/gen
