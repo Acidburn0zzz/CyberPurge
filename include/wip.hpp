@@ -2,6 +2,7 @@
 #define _INCLUDED_wip_hpp
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_mixer.h>
 #include <cstdint>
 #include <iostream>
 #include <vector>
@@ -23,7 +24,7 @@ struct Color{
 struct Rend{
 	SDL_Renderer *r;
 	Vec2i size;
-	std::unordered_map<std::string, SDL_Texture*> texcache;
+	std::unordered_map<SDL_Surface*, SDL_Texture*> texcache;
 
 	Rend():r(nullptr){}
 	Rend(SDL_Window *w);
@@ -37,14 +38,16 @@ struct Rend{
 	void start();
 	void finish();
 	void clear(Color c);
-	void blit(Recti dst, SDL_Texture *img);
+	void blit(Recti dst, SDL_Texture *img, SDL_RendererFlip flip=SDL_FLIP_NONE);
 	void fill(Recti dst, Color c);
-	SDL_Texture *getTex(std::string filename);
+	SDL_Texture *getTex(SDL_Surface *srf);
 };
 struct Ctx{
 	State *cur;
 	SDL_TimerID timerTick=0, timerRend=0;
 	Uint32 id;
+	std::unordered_map<std::string, SDL_Surface*> imgcache;
+	std::unordered_map<std::string, Mix_Chunk*> sndcache;
 
 	Ctx(SDL_Window*);
 	~Ctx();
@@ -56,6 +59,10 @@ struct Ctx{
 	void _timer();
 	void clear();
 	TS now();
+	SDL_Surface *getImg(const std::string &fn);
+	Mix_Chunk *getSnd(const std::string &fn, int vol=128);
+	int playSnd(Mix_Chunk *snd, int loops=0, int time=-1);
+	void stopSnd(int id=-1);
 };
 struct State{
 	Ctx *ctx;

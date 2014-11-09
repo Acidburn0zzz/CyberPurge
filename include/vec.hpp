@@ -1,9 +1,10 @@
 #pragma once
 #include <cmath>
+#include <type_traits>
 template<class T1, class T2>
-using mult=std::enable_if_t<std::is_arithmetic<T1>::value && std::is_arithmetic<T2>::value, decltype(std::declval<T1>()*std::declval<T2>())>;
+using mult=typename std::enable_if<std::is_arithmetic<T1>::value && std::is_arithmetic<T2>::value, decltype(std::declval<T1>()*std::declval<T2>())>::type;
 template<class T1, class T2>
-using divt=std::enable_if_t<std::is_arithmetic<T1>::value && std::is_arithmetic<T2>::value, decltype(std::declval<T1>()/std::declval<T2>())>;
+using divt=typename std::enable_if<std::is_arithmetic<T1>::value && std::is_arithmetic<T2>::value, decltype(std::declval<T1>()/std::declval<T2>())>::type;
 template<class T>
 struct Vec2t{
 	T x, y;

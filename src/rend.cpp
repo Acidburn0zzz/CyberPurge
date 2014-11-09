@@ -5,6 +5,8 @@ Rend::Rend(SDL_Window *w){
 	return;
 }
 Rend::~Rend(){
+	for(auto i:texcache) SDL_DestroyTexture(i.second);
+	texcache.clear();
 	if(r) SDL_DestroyRenderer(r);
 	r=nullptr;
 	return;
@@ -33,13 +35,13 @@ void Rend::clear(Color c){
 	SDL_RenderClear(r);
 	return;
 }
-void Rend::blit(Recti dst, SDL_Texture *img){
+void Rend::blit(Recti dst, SDL_Texture *img, SDL_RendererFlip flip){
 	SDL_Rect rect;
 	rect.x=dst.pos.x;
 	rect.y=dst.pos.y;
 	rect.w=dst.size.x;
 	rect.h=dst.size.y;
-	SDL_RenderCopy(r, img, nullptr, &rect);
+	SDL_RenderCopyEx(r, img, nullptr, &rect, 0, nullptr, flip);
 	return;
 }
 void Rend::fill(Recti dst, Color c){
@@ -52,13 +54,11 @@ void Rend::fill(Recti dst, Color c){
 	SDL_RenderFillRect(r, &rect);
 	return;
 }
-SDL_Texture *Rend::getTex(std::string filename){
-	SDL_Texture *&tex=texcache[filename];
+SDL_Texture *Rend::getTex(SDL_Surface *img){
+	if(!img) return nullptr;
+	SDL_Texture *&tex=texcache[img];
 	if(!tex){
-		SDL_Surface *srf=IMG_Load(filename.c_str());
-		if(!srf) return nullptr;
-		tex=SDL_CreateTextureFromSurface(r, srf);
-		SDL_FreeSurface(srf);
+		tex=SDL_CreateTextureFromSurface(r, img);
 	}
 	return tex;
 }

@@ -14,6 +14,10 @@ void Ctx::clear(){
 	return;
 }
 Ctx::~Ctx(){
+	for(auto i:imgcache){
+		SDL_FreeSurface(i.second);
+	}
+	imgcache.clear();
 	clear();
 	return;
 }
@@ -82,6 +86,27 @@ void Ctx::_timer(){
 }
 TS Ctx::now(){
 	return SDL_GetTicks();
+}
+SDL_Surface *Ctx::getImg(const std::string &fn){
+	SDL_Surface *&ret=imgcache[fn];
+	if(!ret){
+		ret=IMG_Load(("ass/"+fn).c_str());
+	}
+	return ret;
+}
+Mix_Chunk *Ctx::getSnd(const std::string &fn, int vol){
+	Mix_Chunk *&ret=sndcache[fn];
+	if(!ret){
+		ret=Mix_LoadWAV(("ass/"+fn).c_str());
+		if(ret && vol!=128) Mix_VolumeChunk(ret, vol);
+	}
+	return ret;
+}
+int Ctx::playSnd(Mix_Chunk *snd, int loops, int time){
+	return Mix_PlayChannelTimed(-1, snd, loops, time);
+}
+void Ctx::stopSnd(int id){
+	Mix_HaltChannel(id);
 }
 void State::enabled(){}
 void State::key(KEType type, TS time, SDL_Keysym k){}

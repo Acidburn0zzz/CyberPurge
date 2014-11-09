@@ -1,5 +1,7 @@
 #pragma once
 #include <wip.hpp>
+#include <random>
+#include <queue>
 template<class T>
 struct Array2d{
 	std::size_t r, c;
@@ -53,10 +55,24 @@ struct Array2d{
 		return data+i*c;
 	}
 };
+struct Animation{
+	struct Frame{
+		SDL_Surface *img;
+		Vec2 size;
+		TS time;
+	};
+	Vec2 pos;
+	std::queue<Frame> q;
+	TS until=0;
+	bool direction;
+};
 struct Object{
 	Vec2 pos, vel;
 	double mass, drag;
-	std::string tex;
+
+	bool direction, dirflip=false;
+	std::vector<std::pair<SDL_Surface*, Vec2>> texs;
+	std::size_t stage=0;
 };
 struct OBall: Object{
 	double r;
@@ -66,57 +82,80 @@ struct ORect: Object{
 	Vec2 size;
 };
 struct Boulder: OBall{
-	// Move along, there's nothing to see here.
 	bool hit;
-	double damage, acc;
+	double damage, acc, kb, lifesteal;
 	std::size_t hits;
 	Vec2 initvel;
 };
 struct Entity: ORect{
-	double hp, maxhp;
+	double hp, maxhp, jump;
+	double gndAcc, airAcc;
+	std::size_t walkStages, jumpStage, forceStage;
+	TS forceStageUntil=0;
+	double walkLen;
+	Animation death;
+	Mix_Chunk *deathsound;
+};
+struct Weapon{
+	double dmg, range, angle, kb, lifesteal;
+	std::size_t stage;
+	TS time;
+	Animation anim;
+	Mix_Chunk *snd;
 };
 struct Player: Entity{
-	double gndAcc, airAcc;
-	double jump;
 	bool spacemask=false;
 	unsigned dj=0;
-	bool ctlL=false, ctlR=false, ctlSpace=false;
+	double fallUntil=1/0.;
+	bool ctlL=false, ctlR=false, ctlSpace=false, ctlX=false, ctlZ=false;
+	TS shootTime=0;
+	Weapon bb, sg;
 };
 struct Enemy: Entity{
-	double r, acc, damage;
+	double damage;
+	Vec2 tgt;
+	TS notTrackingUntil=0;
+	unsigned ntReason=0;
 };
 struct CellInfo{
 	bool solidU, solidD, solidL, solidR;
 	double dragWalk, dragStop;
-	bool fastStop;
 	double jump;
-	std::string tex;
+	SDL_Surface *tex;
 };
 struct Game: State{
 	using Cell=std::uint8_t;
 	Array2d<Cell> grid;
+	std::mt19937_64 rnd;
 	Game(std::istream &in);
 	~Game();
 
 	std::unordered_map<Cell, CellInfo> cellinfo;
-	Vec2 bgsize;
+	SDL_Surface *imgBG;
+	Vec2 bgsize, bgshift;
 
+	Rect visible;
 	double ticklen;
 	Vec2 gravity;
-	double baseKB;
+	
+	std::vector<std::pair<Enemy,double>> enemyKinds;
 
 	Boulder ball;
+	double ballv;
 	Player plr;
 	std::vector<Enemy> enemies;
 	bool hasBall=false;
 
 	void tBase(Object &o, double drag, double gc);
 	void tGround(ORect &o, bool dir);
-	void tWall(ORect &o, bool dir);
+	bool tWall(ORect &o, bool dir);
 	bool tReflect(OBall &o);
 	void tick(Boulder &o);
 	void tick(Enemy &e);
 	void tick(Player &p);
+	CellInfo *gndcell(ORect &o);
+	void attack(Player &plr, const Weapon &w);
+	void spawn(Enemy kind);
 	virtual void enabled();
 	virtual void key(KEType type, TS time, SDL_Keysym k);
 	virtual void tick();
@@ -129,7 +168,9 @@ struct Game: State{
 		return viewport(Rect{a,b});
 	}
 	virtual void render(Rend *r);
-	void render(Rend *r, ORect&);
-	void render(Rend *r, OBall&);
+	void render(Rend *r, Object&);
 	void render(Rend *r, Entity&);
+	void render(Rend *r, Animation&);
+	void anim(Vec2 pos, bool dir, Animation a);
+	std::vector<Animation> animations;
 };
