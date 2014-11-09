@@ -70,7 +70,7 @@ struct Object{
 	Vec2 pos, vel;
 	double mass, drag;
 
-	bool direction, dirflip=false;
+	bool direction=false, dirflip=false;
 	std::vector<std::pair<SDL_Surface*, Vec2>> texs;
 	std::size_t stage=0;
 };
@@ -85,7 +85,6 @@ struct Boulder: OBall{
 	bool hit;
 	double damage, acc, kb, lifesteal;
 	std::size_t hits;
-	Vec2 initvel;
 };
 struct Entity: ORect{
 	double hp, maxhp, jump;
@@ -127,10 +126,13 @@ struct Game: State{
 	using Cell=std::uint8_t;
 	Array2d<Cell> grid;
 	std::mt19937_64 rnd;
-	Game(std::istream &in);
+	Game(std::istream &game, std::istream &terrain);
 	~Game();
 
 	std::unordered_map<Cell, CellInfo> cellinfo;
+	std::string fnBG, fnSnd, fnBall, fnEnd, fnSndEnd;
+	int volSnd, volSndEnd;
+	Mix_Chunk *snd, *sndEnd;
 	SDL_Surface *imgBG;
 	Vec2 bgsize, bgshift;
 
@@ -142,6 +144,7 @@ struct Game: State{
 
 	Boulder ball;
 	double ballv;
+	Vec2 balloff;
 	Player plr;
 	std::vector<Enemy> enemies;
 	bool hasBall=false;

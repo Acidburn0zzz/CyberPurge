@@ -96,14 +96,32 @@ void Game::attack(Player &plr, const Weapon &w){
 Game::~Game(){
 	return;
 }
-Game::Game(std::istream &fin):rnd(42){
+Game::Game(std::istream &gin, std::istream &tin){
+	ticklen=0.01;
+
+	unsigned long long seed;
+	gin>>seed;
+	gin>>gravity.x>>gravity.y;
+
+	gin>>ball.mass>>ball.drag>>ballv>>ball.r>>balloff.x>>balloff.y;
+	gin>>ball.acc>>ball.kb>>ball.damage>>ball.lifesteal;
+	gin>>fnBall;
+	ball.vel=Vec2{0,0};
+
+	gin>>fnBG>>bgsize.x>>bgsize.y>>bgshift.x>>bgshift.y;
+	gin>>fnSnd>>volSnd;
+
+	gin>>fnEnd>>fnSndEnd>>volSndEnd;
+
+	rnd.seed(seed);
+
 	std::size_t r, c;
-	fin>>r>>c;
+	tin>>r>>c;
 	grid=Array2d<Cell>(r, c);
 	for(std::size_t i=r;i--;){
 		for(std::size_t j=0;j<c;j++){
 			char c;
-			fin>>c;
+			tin>>c;
 			grid[i][j]=c;
 		}
 	}
@@ -373,17 +391,13 @@ void Game::tick(Player &p){
 	return;
 }
 void Game::enabled(){
+	imgBG=ctx->getImg(fnBG);
+	snd=ctx->getSnd(fnSnd, volSnd);
+	sndEnd=ctx->getSnd(fnSndEnd, volSndEnd);
+	ball.texs.emplace_back(ctx->getImg(fnBall), Vec2{ball.r,ball.r}*2);
 	ctx->stopSnd();
-	ctx->playSnd(ctx->getSnd("soundtrack.ogg", 32), 1);
-	ticklen=0.01;
+	ctx->playSnd(snd, 1);
 	ctx->ttick(std::floor(ticklen*1000+0.5));
-
-	ballv=10;
-	gravity=Vec2{0,-70};
-
-	bgsize=Vec2{25,5};
-	bgshift=Vec2{1,0.85};
-	imgBG=ctx->getImg("background.png");
 
 	{
 		std::ifstream fin("data/player");
@@ -393,18 +407,6 @@ void Game::enabled(){
 		plr.vel=Vec2{0,0};
 	}
 	plr.pos=Vec2{1,1}+plr.size/2;
-
-	ball.pos=Vec2{-100,-100};
-	ball.vel=Vec2{0,0};
-	ball.mass=1;
-	ball.r=0.7;
-	ball.drag=1;
-	ball.damage=1.2;
-	ball.acc=1.5;
-	ball.initvel=Vec2{0,0};
-	ball.texs.emplace_back(ctx->getImg("ball.png"), Vec2{ball.r,ball.r}*2);
-	ball.kb=100;
-	ball.lifesteal=0.2;
 
 	{
 		std::ifstream fin("data/enemies");
@@ -462,11 +464,14 @@ void Game::key(KEType type, TS time, SDL_Keysym k){
 	}
 	if(k.sym==SDLK_c && !hasBall && plr.shootTime<ctx->now()){
 		ball.vel=plr.vel;
-		if(plr.direction==0) ball.vel.x+=ballv;
-		else ball.vel.x-=ballv;
-		ball.vel+=ball.initvel;
-		ball.pos=plr.pos;
-		ball.pos.y+=0.4;
+		ball.pos=balloff;
+		if(plr.direction==0){
+			ball.vel.x+=ballv;
+		}else{
+			ball.vel.x-=ballv;
+			ball.pos.x=-ball.pos.x;
+		}
+		ball.pos+=plr.pos;
 		ball.hit=false;
 		ball.hits=4;
 		hasBall=true;
@@ -484,9 +489,9 @@ void Game::tick(){
 			SDL_Event ev;
 			ev.type=SDL_QUIT;
 			SDL_PushEvent(&ev);
-		}, {"usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png","usuck.png",});
+		}, {fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd,fnEnd});
 		ctx->stopSnd();
-		ctx->playSnd(ctx->getSnd("endgame.ogg"));
+		ctx->playSnd(sndEnd);
 		ctx->state(e);
 		return;
 	}

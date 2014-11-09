@@ -3,8 +3,8 @@
 Rect Game::setView(Vec2i screen){
 	// (0,0) to (0,w)
 	// (c,r) to (?,0)
-	double scale=70;
-	//scale=std::floor(scale);
+	double scale=screen.y/10.0;
+	scale=std::floor(scale);
 	vm.mx=Vec2{1,0}*scale;
 	vm.my=Vec2{0,1}*scale;
 	vm.a=Vec2{-plr.pos.x*scale+screen.x/2.0, -plr.pos.y*scale+screen.y/2.0};

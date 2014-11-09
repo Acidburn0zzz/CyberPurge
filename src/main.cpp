@@ -23,9 +23,9 @@ int main(int argc, char **argv){
 	Ctx *c=new Ctx(w);
 	Rend r=Rend(w);
 	c->state(new Slideshow([c,gener]()->void{
-		system((std::string(gener)+" < data/gen.in > data/game.in").c_str());
-		std::ifstream fin("data/game.in");
-		Game *g=new Game(fin);
+		system((std::string(gener)+" < data/game > data/terrain").c_str());
+		std::ifstream f1("data/terrain"), f2("data/game");
+		Game *g=new Game(f2, f1);
 		c->state(g);
 	}, {"init0.png","init1.png"}));
 

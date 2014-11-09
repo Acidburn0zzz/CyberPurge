@@ -16,6 +16,6 @@ bin/gen.%: $(SOURCES_gen)
 	@mkdir -p bin
 	$(CC) -x c++ $(CXXFLAGS) $(CXXFLAGS_my) $(CXXFLAGS_p_$*) -std=gnu++1y $(SOURCES_gen) -o $@
 
-assets: ass/init.ogg ass/soundtrack.ogg ass/enemy-0-d.ogg ass/enemy-1-d.ogg ass/enemy-2-d.ogg ass/w-sg.ogg ass/w-bb.ogg
+assets: ass/init.ogg ass/soundtrack.ogg ass/enemy-0-d.ogg ass/enemy-1-d.ogg ass/enemy-2-d.ogg ass/w-sg.ogg ass/w-bb.ogg ass/endgame.ogg
 ass/%.ogg: ass/%.mp3
 	ffmpeg -y -i $< -codec:a libvorbis -q:a 2 $@

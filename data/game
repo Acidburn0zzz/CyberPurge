@@ -1,0 +1,16 @@
+42
+0 -70
+1 1 10 0.6 0 0.4
+1.2 1.5 0.6 0.2
+ball.png
+background.png 25 5 1 0.85
+soundtrack.ogg 32
+usuck.png endgame.ogg 32
+
+seed
+gravity.x y
+ball.mass drag vel r offset.x offset.y
+ball.acc kb damage lifesteal
+bg bgsize.x bgsize.y bgshift.x bgshift.y
+soundtrack soundtrackVolume
+endgame endgameSnd endgameVol
