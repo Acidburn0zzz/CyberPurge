@@ -10,7 +10,9 @@ static TS tickRender(TS d, void *arg){
 	SDL_PushEvent(&ev);
 	return d;
 }
-int main(){
+int main(int argc, char **argv){
+	const char *gener=argv[1];
+	if(!gener) gener="bin/gen.release.exe";
 	SDL_Init(SDL_INIT_TIMER|SDL_INIT_AUDIO|SDL_INIT_VIDEO|SDL_INIT_EVENTS);
 	IMG_Init(IMG_INIT_PNG);
 	Mix_Init(MIX_INIT_OGG);
@@ -20,8 +22,9 @@ int main(){
 	SDL_TimerID rendTimer=SDL_AddTimer(25, &tickRender, reinterpret_cast<void*>(SDL_GetWindowID(w)));
 	Ctx *c=new Ctx(w);
 	Rend r=Rend(w);
-	c->state(new Slideshow([c]()->void{
-		std::ifstream fin("game.in");
+	c->state(new Slideshow([c,gener]()->void{
+		system((std::string(gener)+" < data/gen.in > data/game.in").c_str());
+		std::ifstream fin("data/game.in");
 		Game *g=new Game(fin);
 		c->state(g);
 	}, {"init0.png","init1.png"}));
